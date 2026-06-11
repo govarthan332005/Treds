@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <title>Writely - Settings</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="app.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <style>
+        .profile-card {
+            background: var(--gradient); color: white;
+            margin: 16px; padding: 24px 20px; border-radius: 20px;
+            display: flex; align-items: center; gap: 16px;
+            box-shadow: var(--shadow-lg); position: relative; overflow: hidden;
+        }
+        .profile-card::before {
+            content: ''; position: absolute; top: -30px; right: -30px;
+            width: 120px; height: 120px; background: rgba(255,255,255,0.1); border-radius: 50%;
+        }
+        .profile-avatar {
+            width: 64px; height: 64px; background: rgba(255,255,255,0.25);
+            border-radius: 50%; display: flex; align-items: center;
+            justify-content: center; font-size: 24px; font-weight: 700;
+            backdrop-filter: blur(10px); flex-shrink: 0; position: relative; z-index: 1;
+        }
+        .profile-info { flex: 1; position: relative; z-index: 1; }
+        .profile-info h2 { font-size: 18px; margin-bottom: 4px; }
+        .profile-info p { font-size: 13px; opacity: 0.9; word-break: break-all; }
+        .edit-profile-btn {
+            background: rgba(255,255,255,0.2); color: white; border: none;
+            padding: 8px 14px; border-radius: 10px; cursor: pointer;
+            font-size: 12px; font-weight: 600; backdrop-filter: blur(10px);
+            margin-top: 8px;
+        }
+        
+        .settings-group {
+            background: white; margin: 0 16px 16px; border-radius: 16px;
+            overflow: hidden; box-shadow: var(--shadow-sm);
+        }
+        .settings-group .group-title {
+            padding: 14px 16px 8px; font-size: 12px; font-weight: 700;
+            text-transform: uppercase; color: var(--text-light); letter-spacing: 1px;
+        }
+        .setting-item {
+            display: flex; align-items: center; gap: 14px;
+            padding: 14px 16px; cursor: pointer; transition: background 0.2s;
+            border-bottom: 1px solid var(--border);
+        }
+        .setting-item:last-child { border-bottom: none; }
+        .setting-item:hover { background: #f8fafc; }
+        .setting-item:active { background: #f1f5f9; }
+        
+        .setting-icon {
+            width: 40px; height: 40px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            background: var(--gradient-soft); color: var(--primary); font-size: 16px;
+            flex-shrink: 0;
+        }
+        .setting-icon.danger { background: #fee2e2; color: var(--error); }
+        
+        .setting-content { flex: 1; }
+        .setting-title { font-size: 14px; font-weight: 600; color: var(--text-dark); }
+        .setting-desc { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+        
+        .setting-toggle {
+            position: relative; width: 44px; height: 24px;
+            background: #cbd5e1; border-radius: 12px; cursor: pointer;
+            transition: background 0.3s; flex-shrink: 0;
+        }
+        .setting-toggle::after {
+            content: ''; position: absolute; top: 2px; left: 2px;
+            width: 20px; height: 20px; background: white;
+            border-radius: 50%; transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        .setting-toggle.active { background: var(--primary); }
+        .setting-toggle.active::after { transform: translateX(20px); }
+        
+        .setting-arrow { color: var(--text-light); font-size: 12px; }
+        
+        .app-info {
+            text-align: center; padding: 20px; color: var(--text-light); font-size: 12px;
+        }
+        
+        .modal h3 { margin-bottom: 16px; }
+        .modal .form-field { margin-bottom: 14px; }
+        .modal .form-field label {
+            display: block; font-size: 13px; color: var(--text-dark);
+            font-weight: 600; margin-bottom: 6px;
+        }
+        .modal .form-field input, .modal .form-field textarea {
+            width: 100%; padding: 12px 14px; border: 2px solid var(--border);
+            border-radius: 10px; font-family: inherit; font-size: 14px; background: #f8fafc;
+        }
+        .modal .form-field input:focus { outline: none; border-color: var(--primary); background: white; }
+    </style>
+</head>
+<body>
+    <div class="page-loader" id="pageLoader"><div class="loader-circle"></div></div>
+
+    <header class="app-header" style="padding-bottom: 14px;">
+        <div class="header-top" style="margin-bottom: 0;">
+            <h2 style="font-size: 20px; font-weight: 700; flex: 1;">Settings ⚙️</h2>
+        </div>
+    </header>
+
+    <!-- Profile Card -->
+    <div class="profile-card">
+        <div class="profile-avatar" id="profileAvatar">U</div>
+        <div class="profile-info">
+            <h2 id="profileName">User</h2>
+            <p id="profileEmail">email@example.com</p>
+            <button class="edit-profile-btn" id="editProfileBtn"><i class="fas fa-pen"></i> Edit Profile</button>
+        </div>
+    </div>
+
+    <!-- Account -->
+    <div class="settings-group">
+        <div class="group-title">Account</div>
+        <div class="setting-item" onclick="openModal('editProfile')">
+            <div class="setting-icon"><i class="fas fa-user"></i></div>
+            <div class="setting-content">
+                <div class="setting-title">Personal Information</div>
+                <div class="setting-desc">Name, email, phone</div>
+            </div>
+            <i class="fas fa-chevron-right setting-arrow"></i>
+        </div>
+        <div class="setting-item" onclick="openModal('addresses')">
+            <div class="setting-icon"><i class="fas fa-location-dot"></i></div>
+            <div class="setting-content">
+                <div class="setting-title">Saved Addresses</div>
+                <div class="setting-desc" id="addressDesc">Manage delivery addresses</div>
+            </div>
+            <i class="fas fa-chevron-right setting-arrow"></i>
+        </div>
+        <div class="setting-item" onclick="window.location.href='favorites.html'">
+            <div class="setting-icon"><i class="fas fa-heart"></i></div>
+            <div class="setting-content">
+                <div class="setting-title">Favorites</div>
+                <div class="setting-desc">Your saved writings</div>
+            </div>
+            <i class="fas fa-chevron-right setting-arrow"></i>
+        </div>
+    </div>
+
+    <!-- Preferences -->
+    <div class="settings-group">
+        <div class="group-title">Preferences</div>
+        <div class="setting-item" onclick="toggleSetting('notifications', this)">
+            <div class="setting-icon"><i class="fas fa-bell"></i></div>
+            <div class="setting-content">
+                <div class="setting-title">Notifications</div>
+                <div class="setting-desc">Order updates & offers</div>
+            </div>
+            <div class="setting-toggle active" data-key="notifications"></div>
+        </div>
+        <div class="setting-item" onclick="toggleSetting('locationServices', this)">
+            <div class="setting-icon"><i class="fas fa-location-arrow"></i></div>
+            <div class="setting-content">
+                <div class="setting-title">Location Services</div>
+                <div class="setting-desc">Auto-detect delivery location</div>
+            </div>
+            <div class="setting-toggle active" data-key="locationServices"></div>
+        </div>
+        <div class="setting-item" onclick="toggleSetting('emailUpdates', this)">
+            <div class="setting-icon"><i class="fas fa-envelope"></i></div>
+            <div class="setting-content">
+                <div class="setting-title">Email Updates</div>
+                <div class="setting-desc">Promotional emails</div>
+            </div>
+            <div class="setting-toggle" data-key="emailUpdates"></div>
+        </div>
+    </div>
+
+    <!-- Support -->
+    <div class="settings-group">
+        <div class="group-title">Support</div>
+        <div class="setting-item" onclick="openModal('help')">
+            <div class="setting-icon"><i class="fas fa-circle-question"></i></div>
+            <div class="setting-content">
+                <div class="setting-title">Help Center</div>
+                <div class="setting-desc">FAQs and guides</div>
+            </div>
+            <i class="fas fa-chevron-right setting-arrow"></i>
+        </div>
+        <div class="setting-item" onclick="window.location.href='tel:+919999999999'">
+            <div class="setting-icon"><i class="fas fa-headset"></i></div>
+            <div class="setting-content">
+                <div class="setting-title">Contact Support</div>
+                <div class="setting-desc">Call our 24/7 helpline</div>
+            </div>
+            <i class="fas fa-chevron-right setting-arrow"></i>
+        </div>
+        <div class="setting-item" onclick="openModal('about')">
+            <div class="setting-icon"><i class="fas fa-circle-info"></i></div>
+            <div class="setting-content">
+                <div class="setting-title">About Writely</div>
+                <div class="setting-desc">Terms, Privacy, Version</div>
+            </div>
+            <i class="fas fa-chevron-right setting-arrow"></i>
+        </div>
+    </div>
+
+    <!-- Logout -->
+    <div class="settings-group">
+        <div class="setting-item" onclick="logout()">
+            <div class="setting-icon danger"><i class="fas fa-right-from-bracket"></i></div>
+            <div class="setting-content">
+                <div class="setting-title" style="color:var(--error);">Logout</div>
+                <div class="setting-desc">Sign out of your account</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="app-info">
+        Writely v1.0.0 • Made with ❤️ for students
+    </div>
+
+    <!-- Edit Profile Modal -->
+    <div class="modal-overlay" id="editProfileModal">
+        <div class="modal">
+            <div class="modal-handle"></div>
+            <h3>✏️ Edit Profile</h3>
+            <div class="form-field">
+                <label>Username</label>
+                <input type="text" id="editUsername">
+            </div>
+            <div class="form-field">
+                <label>Phone Number</label>
+                <input type="tel" id="editPhone" placeholder="+91 XXXXX XXXXX">
+            </div>
+            <div class="form-field">
+                <label>Default Address</label>
+                <textarea id="editAddress" rows="3" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-family:inherit;"></textarea>
+            </div>
+            <button class="btn-primary" style="width:100%;margin-top:8px;" id="saveProfileBtn">Save Changes</button>
+            <button class="btn-outline" style="width:100%;margin-top:8px;" onclick="closeModal('editProfile')">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Addresses Modal -->
+    <div class="modal-overlay" id="addressesModal">
+        <div class="modal">
+            <div class="modal-handle"></div>
+            <h3>📍 Delivery Address</h3>
+            <div class="form-field">
+                <label>Address</label>
+                <textarea id="addrInput" rows="3" style="width:100%;padding:12px;border:2px solid var(--border);border-radius:10px;font-family:inherit;"></textarea>
+            </div>
+            <button class="btn-primary" style="width:100%;margin-top:8px;" id="useGPSBtn"><i class="fas fa-location-crosshairs"></i> Use Current Location</button>
+            <button class="btn-outline" style="width:100%;margin-top:8px;" id="saveAddrBtn">Save Address</button>
+        </div>
+    </div>
+
+    <!-- Help Modal -->
+    <div class="modal-overlay" id="helpModal">
+        <div class="modal">
+            <div class="modal-handle"></div>
+            <h3>❓ Help Center</h3>
+            <details style="margin-bottom:12px;padding:14px;background:#f8fafc;border-radius:10px;">
+                <summary style="font-weight:600;cursor:pointer;">How do I place an order?</summary>
+                <p style="margin-top:8px;font-size:13px;color:var(--text-light);">Browse writings on home page, tap one you like, fill in your requirements, and tap "Place Order".</p>
+            </details>
+            <details style="margin-bottom:12px;padding:14px;background:#f8fafc;border-radius:10px;">
+                <summary style="font-weight:600;cursor:pointer;">How does pickup work?</summary>
+                <p style="margin-top:8px;font-size:13px;color:var(--text-light);">Our delivery partner will come to your location to pick up your book/script at the scheduled time.</p>
+            </details>
+            <details style="margin-bottom:12px;padding:14px;background:#f8fafc;border-radius:10px;">
+                <summary style="font-weight:600;cursor:pointer;">Can I cancel an order?</summary>
+                <p style="margin-top:8px;font-size:13px;color:var(--text-light);">Yes, you can cancel orders before pickup. Open order details and tap "Cancel Order".</p>
+            </details>
+            <details style="margin-bottom:12px;padding:14px;background:#f8fafc;border-radius:10px;">
+                <summary style="font-weight:600;cursor:pointer;">What payment methods are accepted?</summary>
+                <p style="margin-top:8px;font-size:13px;color:var(--text-light);">We accept Cash on Delivery (COD), UPI, and Credit/Debit Cards.</p>
+            </details>
+            <button class="btn-outline" style="width:100%;margin-top:8px;" onclick="closeModal('help')">Close</button>
+        </div>
+    </div>
+
+    <!-- About Modal -->
+    <div class="modal-overlay" id="aboutModal">
+        <div class="modal">
+            <div class="modal-handle"></div>
+            <h3>ℹ️ About Writely</h3>
+            <div style="text-align:center;padding:20px 0;">
+                <div style="width:80px;height:80px;background:var(--gradient);border-radius:20px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+                    <i class="fas fa-pen-nib" style="color:white;font-size:36px;transform:rotate(-20deg);"></i>
+                </div>
+                <h2 style="background:var(--gradient);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Writely</h2>
+                <p style="color:var(--text-light);margin-top:8px;font-size:13px;">Your Writing, Delivered ✨</p>
+                <p style="font-size:12px;color:var(--text-light);margin-top:12px;">Version 1.0.0</p>
+            </div>
+            <p style="text-align:center;font-size:13px;color:var(--text-light);line-height:1.6;padding:0 12px;">
+                Writely connects students with professional writers for handwritten assignments, records, and projects — delivered straight to your doorstep.
+            </p>
+            <div style="display:flex;justify-content:center;gap:16px;margin-top:20px;font-size:13px;">
+                <a href="#" style="color:var(--primary);">Terms</a>
+                <a href="#" style="color:var(--primary);">Privacy</a>
+                <a href="#" style="color:var(--primary);">Contact</a>
+            </div>
+            <button class="btn-outline" style="width:100%;margin-top:20px;" onclick="closeModal('about')">Close</button>
+        </div>
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="home.html" class="nav-item"><i class="fas fa-house"></i><span>Home</span></a>
+        <a href="orders.html" class="nav-item"><i class="fas fa-bag-shopping"></i><span>Orders</span></a>
+        <a href="favorites.html" class="nav-item"><i class="fas fa-heart"></i><span>Favorites</span></a>
+        <a href="settings.html" class="nav-item active"><i class="fas fa-gear"></i><span>Settings</span></a>
+    </nav>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module" src="./firebase-config.js"></script>
+    <script type="module" src="./settings.js"></script>
+</body>
+</html>

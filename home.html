@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <title>Writely - Home</title>
+
+    <!-- Performance: preconnect to all third-party origins -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
+    <link rel="dns-prefetch" href="https://slice-investment-default-rtdb.firebaseio.com">
+
+    <!-- Critical CSS inline; rest of app.css async -->
+    <link rel="preload" href="app.css" as="style">
+    <link rel="stylesheet" href="app.css">
+
+    <!-- Only the weights we actually use; font-display:swap is in URL -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome loaded non-blocking -->
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+
+    <!-- Leaflet for map picker (only loads on first open) -->
+    <link rel="preload" as="style" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+</head>
+<body>
+    <!-- Page Loader: hidden as soon as DOM parsed (no Firebase wait) -->
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-circle"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="app-header">
+        <div class="header-top">
+            <div class="location-info" id="locationBtn">
+                <div class="icon-wrap"><i class="fas fa-location-dot"></i></div>
+                <div class="location-text">
+                    <div class="label">Deliver to</div>
+                    <div class="value" id="locationText">Set location <i class="fas fa-chevron-down" style="font-size:10px;"></i></div>
+                </div>
+            </div>
+            <div class="user-avatar" id="userAvatar" onclick="window.location.href='settings.html'">U</div>
+        </div>
+        <div class="search-bar">
+            <i class="fas fa-search"></i>
+            <input type="text" placeholder="Search assignments, records, projects..." id="searchInput" enterkeyhint="search">
+        </div>
+    </header>
+
+    <!-- Hero Banner -->
+    <div class="hero-banner">
+        <h2>Get Your Writing Done <span class="emoji">✍️</span></h2>
+        <p>Professional handwritten assignments, records & more — delivered to your door!</p>
+        <button class="hero-cta" id="heroExploreBtn">
+            <i class="fas fa-bolt"></i> Explore Now
+        </button>
+    </div>
+
+    <!-- Categories -->
+    <div class="section-header">
+        <h3>Categories</h3>
+    </div>
+    <div class="categories" id="categories">
+        <div class="category-chip active" data-cat="all">🎯 All</div>
+        <div class="category-chip" data-cat="assignment">📚 Assignments</div>
+        <div class="category-chip" data-cat="record">📋 Records</div>
+        <div class="category-chip" data-cat="project">📁 Projects</div>
+        <div class="category-chip" data-cat="essay">✍️ Essays</div>
+        <div class="category-chip" data-cat="notes">📝 Notes</div>
+    </div>
+
+    <!-- Writings List -->
+    <div class="section-header">
+        <h3>Top Picks for You</h3>
+        <a href="#" class="see-all">See all</a>
+    </div>
+
+    <div class="writings-grid" id="writingsGrid">
+        <!-- Skeleton shown immediately for fast perceived load -->
+        <div class="skel-card">
+            <div class="skeleton skel-img"></div>
+            <div class="skeleton skel-line"></div>
+            <div class="skeleton skel-line short"></div>
+        </div>
+        <div class="skel-card">
+            <div class="skeleton skel-img"></div>
+            <div class="skeleton skel-line"></div>
+            <div class="skeleton skel-line short"></div>
+        </div>
+    </div>
+
+    <!-- ============ LOCATION MODAL (Zomato-style) ============ -->
+    <div class="modal-overlay" id="locationModal">
+        <div class="modal modal-full" style="display:flex; flex-direction:column;">
+            <div class="modal-handle"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <h3 style="margin:0;">📍 Set Delivery Location</h3>
+                <button id="closeLocModal" style="background:#f1f5f9; border:none; width:36px; height:36px; border-radius:50%; font-size:16px; cursor:pointer;">×</button>
+            </div>
+
+            <!-- Tab Switcher -->
+            <div class="loc-tabs">
+                <button class="loc-tab active" data-panel="map"><i class="fas fa-map"></i> Map</button>
+                <button class="loc-tab" data-panel="search"><i class="fas fa-search"></i> Search</button>
+                <button class="loc-tab" data-panel="manual"><i class="fas fa-pen"></i> Manual</button>
+            </div>
+
+            <!-- MAP PANEL -->
+            <div class="loc-panel active" data-panel="map">
+                <button class="btn-primary" id="useGPS" style="width:100%; margin-bottom:12px;">
+                    <i class="fas fa-location-crosshairs"></i> Use My Current Location
+                </button>
+
+                <div id="mapPicker">
+                    <div class="map-pin-overlay"><i class="fas fa-location-dot"></i></div>
+                    <button class="map-recenter" id="recenterBtn" title="My location">
+                        <i class="fas fa-crosshairs"></i>
+                    </button>
+                </div>
+
+                <div class="detected-address" id="detectedAddr" style="display:none;">
+                    <i class="fas fa-location-dot"></i>
+                    <div style="flex:1; min-width:0;">
+                        <div class="addr-line" id="detectedAddrLine">—</div>
+                        <div class="addr-sub" id="detectedAddrSub">Move the pin to your exact location</div>
+                    </div>
+                </div>
+
+                <!-- Detail fields once pin placed -->
+                <div class="addr-form" id="mapAddrForm" style="display:none;">
+                    <div class="field-row">
+                        <div>
+                            <label>Flat / Floor / Door No.</label>
+                            <input type="text" id="addrFlat" placeholder="e.g. 3B, Floor 2">
+                        </div>
+                        <div>
+                            <label>Building / Society</label>
+                            <input type="text" id="addrBuilding" placeholder="e.g. Sunshine Apt">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Landmark (optional)</label>
+                        <input type="text" id="addrLandmark" placeholder="Near park, opposite school...">
+                    </div>
+                    <div>
+                        <label>Save as</label>
+                        <div class="addr-type-row" id="addrTypeRow">
+                            <div class="addr-type-chip active" data-type="home">🏠 Home</div>
+                            <div class="addr-type-chip" data-type="work">🏢 Work</div>
+                            <div class="addr-type-chip" data-type="other">📍 Other</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary" id="saveMapAddr" style="margin-top:6px;">
+                        <i class="fas fa-check"></i> Confirm Address
+                    </button>
+                </div>
+            </div>
+
+            <!-- SEARCH PANEL -->
+            <div class="loc-panel" data-panel="search">
+                <div class="search-bar" style="margin-bottom:12px;">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="locSearchInput" placeholder="Search area, street, landmark...">
+                </div>
+                <div id="searchSuggestions" class="search-suggestions" style="display:none;"></div>
+                <div id="searchEmpty" style="text-align:center; padding:40px 20px; color:var(--text-light);">
+                    <i class="fas fa-search" style="font-size:32px; margin-bottom:8px; opacity:0.5;"></i>
+                    <p style="font-size:13px;">Type to search any location</p>
+                </div>
+            </div>
+
+            <!-- MANUAL PANEL -->
+            <div class="loc-panel" data-panel="manual">
+                <div class="addr-form">
+                    <div>
+                        <label>Full Address *</label>
+                        <textarea id="manualFullAddr" placeholder="House / Flat number, Street, Area, City, Pincode"></textarea>
+                    </div>
+                    <div class="field-row">
+                        <div>
+                            <label>Flat / Floor</label>
+                            <input type="text" id="manualFlat" placeholder="e.g. 3B">
+                        </div>
+                        <div>
+                            <label>Building</label>
+                            <input type="text" id="manualBuilding" placeholder="Society / Apt name">
+                        </div>
+                    </div>
+                    <div>
+                        <label>Landmark</label>
+                        <input type="text" id="manualLandmark" placeholder="Near...">
+                    </div>
+                    <div>
+                        <label>Save as</label>
+                        <div class="addr-type-row" id="manualTypeRow">
+                            <div class="addr-type-chip active" data-type="home">🏠 Home</div>
+                            <div class="addr-type-chip" data-type="work">🏢 Work</div>
+                            <div class="addr-type-chip" data-type="other">📍 Other</div>
+                        </div>
+                    </div>
+                    <button class="btn-primary" id="saveManualAddr"><i class="fas fa-check"></i> Save Address</button>
+                </div>
+            </div>
+
+            <!-- SAVED ADDRESSES -->
+            <div id="savedAddressesSection" style="margin-top:18px;">
+                <h4 style="font-size:13px; text-transform:uppercase; color:var(--text-light); letter-spacing:1px; margin-bottom:10px;">Saved Addresses</h4>
+                <div class="saved-addr-list" id="savedAddrList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+        <a href="home.html" class="nav-item active"><i class="fas fa-house"></i><span>Home</span></a>
+        <a href="orders.html" class="nav-item"><i class="fas fa-bag-shopping"></i><span>Orders</span></a>
+        <a href="favorites.html" class="nav-item"><i class="fas fa-heart"></i><span>Favorites</span></a>
+        <a href="settings.html" class="nav-item"><i class="fas fa-gear"></i><span>Settings</span></a>
+    </nav>
+
+    <!-- Toast -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Leaflet (deferred - only loads once page is ready, ~40KB) -->
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <!-- Hide loader as soon as HTML parsed; show cached data instantly -->
+    <script>
+        // Instant cache-render: paint cards immediately if we have a recent cache,
+        // BEFORE Firebase auth even initializes.
+        try {
+            const cached = localStorage.getItem('writely_cache_v1');
+            if (cached) {
+                const { ts, data } = JSON.parse(cached);
+                if (Date.now() - ts < 1000 * 60 * 60 * 6 && Array.isArray(data) && data.length) {
+                    window.__WRITELY_CACHE__ = data;
+                }
+            }
+            const cachedAddr = localStorage.getItem('writely_address_v1');
+            if (cachedAddr) {
+                document.addEventListener('DOMContentLoaded', () => {
+                    const el = document.getElementById('locationText');
+                    if (el) el.innerHTML = `${cachedAddr} <i class="fas fa-chevron-down" style="font-size:10px;"></i>`;
+                });
+            }
+        } catch (e) {}
+
+        // Fade loader once DOM is interactive — don't block on Firebase.
+        document.addEventListener('DOMContentLoaded', () => {
+            requestAnimationFrame(() => {
+                document.getElementById('pageLoader').classList.add('hide');
+            });
+        });
+    </script>
+
+    <script type="module" src="./firebase-config.js"></script>
+    <script type="module" src="./home.js"></script>
+</body>
+</html>

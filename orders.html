@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <title>Writely - Orders</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="app.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <style>
+        .orders-tabs {
+            display: flex; gap: 8px; padding: 12px 16px;
+            background: white; overflow-x: auto; scrollbar-width: none;
+            /* Removed top:60px sticky — caused overlap with header. Use natural flow. */
+            border-bottom: 1px solid var(--border);
+        }
+        .orders-tabs::-webkit-scrollbar { display: none; }
+        .tab-pill {
+            padding: 8px 16px; background: #f1f5f9; border-radius: 20px;
+            font-size: 13px; font-weight: 600; cursor: pointer;
+            white-space: nowrap; color: var(--text-light);
+            transition: all 0.2s;
+        }
+        .tab-pill.active { background: var(--gradient); color: white; }
+        
+        .order-card {
+            background: white; border-radius: 16px; margin: 12px 16px;
+            padding: 16px; box-shadow: var(--shadow-sm); cursor: pointer;
+            transition: all 0.2s;
+        }
+        .order-card:active { transform: scale(0.98); }
+        
+        .order-top {
+            display: flex; gap: 12px; align-items: center; margin-bottom: 12px;
+        }
+        .order-img {
+            width: 56px; height: 56px; border-radius: 12px; object-fit: cover;
+            background: var(--gradient-soft);
+        }
+        .order-info { flex: 1; min-width: 0; }
+        .order-info h4 {
+            font-size: 14px; font-weight: 700; margin-bottom: 3px;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .order-info .order-id { font-size: 11px; color: var(--text-light); font-weight: 500; }
+        .order-info .order-meta { font-size: 12px; color: var(--text-light); margin-top: 2px; }
+        
+        .order-status {
+            padding: 4px 10px; border-radius: 8px; font-size: 11px;
+            font-weight: 700; text-align: center;
+        }
+        .status-placed { background: #dbeafe; color: #1e40af; }
+        .status-pickup_assigned { background: #fef3c7; color: #92400e; }
+        .status-picked_up { background: #ede9fe; color: #5b21b6; }
+        .status-writing { background: #fce7f3; color: #9f1239; }
+        .status-completed { background: #d1fae5; color: #065f46; }
+        .status-out_for_delivery { background: #fed7aa; color: #9a3412; }
+        .status-delivered { background: #d1fae5; color: #065f46; }
+        .status-cancelled { background: #fee2e2; color: #991b1b; }
+        
+        .order-progress {
+            display: flex; align-items: center; gap: 4px;
+            margin-top: 12px; padding: 10px;
+            background: #f8fafc; border-radius: 10px;
+        }
+        .progress-step {
+            flex: 1; height: 4px; background: #e2e8f0;
+            border-radius: 2px; position: relative;
+        }
+        .progress-step.active { background: var(--gradient); }
+        .progress-step.current { background: var(--gradient); animation: pulse 1.5s infinite; }
+        
+        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        .order-bottom {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-top: 12px; padding-top: 12px; border-top: 1px dashed var(--border);
+        }
+        .order-total {
+            font-size: 16px; font-weight: 700; color: var(--primary);
+        }
+        .track-btn {
+            background: var(--gradient-soft); color: var(--primary);
+            border: none; padding: 8px 14px; border-radius: 8px;
+            font-size: 12px; font-weight: 600; cursor: pointer;
+            display: flex; align-items: center; gap: 6px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-loader" id="pageLoader"><div class="loader-circle"></div></div>
+
+    <header class="app-header" style="padding-bottom: 14px;">
+        <div class="header-top" style="margin-bottom: 0;">
+            <h2 style="font-size: 20px; font-weight: 700; flex: 1;">My Orders 📦</h2>
+            <div class="user-avatar" id="userAvatar" onclick="window.location.href='settings.html'">U</div>
+        </div>
+    </header>
+
+    <div class="orders-tabs">
+        <div class="tab-pill active" data-status="all">All Orders</div>
+        <div class="tab-pill" data-status="active">🔥 Active</div>
+        <div class="tab-pill" data-status="delivered">✅ Delivered</div>
+        <div class="tab-pill" data-status="cancelled">❌ Cancelled</div>
+    </div>
+
+    <div id="ordersList">
+        <!-- Orders rendered here -->
+    </div>
+
+    <nav class="bottom-nav">
+        <a href="home.html" class="nav-item"><i class="fas fa-house"></i><span>Home</span></a>
+        <a href="orders.html" class="nav-item active"><i class="fas fa-bag-shopping"></i><span>Orders</span></a>
+        <a href="favorites.html" class="nav-item"><i class="fas fa-heart"></i><span>Favorites</span></a>
+        <a href="settings.html" class="nav-item"><i class="fas fa-gear"></i><span>Settings</span></a>
+    </nav>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            requestAnimationFrame(() => {
+                const l = document.getElementById('pageLoader');
+                if (l) l.classList.add('hide');
+            });
+        });
+    </script>
+    <script type="module" src="./firebase-config.js"></script>
+    <script type="module" src="./orders.js"></script>
+</body>
+</html>

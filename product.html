@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <title>Writely - Order</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://images.unsplash.com" crossorigin>
+    <link rel="preconnect" href="https://nominatim.openstreetmap.org" crossorigin>
+
+    <link rel="stylesheet" href="app.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+    <style>
+        body { padding-bottom: 120px; }
+
+        .product-header {
+            position: sticky; top: 0; background: white; z-index: 100;
+            padding: 14px 16px; display: flex; align-items: center; gap: 14px;
+            box-shadow: var(--shadow-sm);
+            padding-top: max(14px, env(safe-area-inset-top));
+        }
+        .back-btn {
+            width: 40px; height: 40px; background: #f1f5f9;
+            border-radius: 12px; display: flex; align-items: center;
+            justify-content: center; cursor: pointer; border: none;
+            transition: background 0.2s, transform 0.15s;
+        }
+        .back-btn:hover { background: #e2e8f0; }
+        .back-btn:active { transform: scale(0.92); }
+        .product-header h2 { font-size: 16px; font-weight: 600; flex: 1; }
+
+        .product-gallery {
+            position: relative; background: var(--gradient-soft);
+            height: 320px; overflow: hidden;
+        }
+        .gallery-track {
+            display: flex; transition: transform 0.4s ease; height: 100%;
+        }
+        .gallery-track img {
+            min-width: 100%; height: 100%; object-fit: cover;
+        }
+        .gallery-dots {
+            position: absolute; bottom: 12px; left: 50%;
+            transform: translateX(-50%); display: flex; gap: 6px;
+        }
+        .gallery-dots .dot {
+            width: 8px; height: 8px; border-radius: 50%;
+            background: rgba(255,255,255,0.6); transition: all 0.3s;
+        }
+        .gallery-dots .dot.active { width: 24px; background: white; }
+
+        .product-info { background: white; padding: 20px 16px; margin-bottom: 8px; }
+        .product-title { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+        .product-meta-row { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+        .rating-pill {
+            background: var(--success); color: white; padding: 4px 10px;
+            border-radius: 8px; font-size: 13px; font-weight: 600;
+            display: inline-flex; align-items: center; gap: 4px;
+        }
+        .reviews-count { color: var(--text-light); font-size: 13px; font-weight: 500; }
+        .product-desc { color: var(--text-light); font-size: 14px; line-height: 1.6; }
+
+        .price-card { background: white; padding: 20px 16px; margin-bottom: 8px; }
+        .price-main { display: flex; align-items: baseline; gap: 8px; margin-bottom: 4px; }
+        .price-current { font-size: 28px; font-weight: 700; color: var(--primary); }
+        .price-unit { font-size: 14px; color: var(--text-light); font-weight: 500; }
+        .price-note { font-size: 12px; color: var(--success); font-weight: 600; }
+
+        .section-block { background: white; padding: 18px 16px; margin-bottom: 8px; }
+        .section-block h4 {
+            font-size: 15px; font-weight: 700; margin-bottom: 14px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .section-block h4 i { color: var(--primary); }
+
+        .form-field { margin-bottom: 14px; }
+        .form-field label {
+            display: block; font-size: 13px; color: var(--text-dark);
+            font-weight: 600; margin-bottom: 6px;
+        }
+        .form-field input, .form-field textarea, .form-field select {
+            width: 100%; padding: 12px 14px; border: 1.5px solid var(--border);
+            border-radius: 11px; font-family: inherit; font-size: 14px;
+            background: #f8fafc; transition: all 0.2s; color: var(--text-dark);
+        }
+        .form-field input:focus, .form-field textarea:focus, .form-field select:focus {
+            outline: none; border-color: var(--primary); background: white;
+            box-shadow: var(--shadow-glow);
+        }
+        .form-field textarea { resize: vertical; min-height: 70px; }
+
+        .pages-counter {
+            display: flex; align-items: center; gap: 12px;
+            background: #f8fafc; border-radius: 12px; padding: 8px; width: fit-content;
+        }
+        .counter-btn {
+            width: 36px; height: 36px; border: none;
+            background: white; border-radius: 10px; font-size: 18px;
+            font-weight: 700; color: var(--primary); cursor: pointer;
+            box-shadow: var(--shadow-sm); transition: transform 0.15s;
+        }
+        .counter-btn:active { transform: scale(0.92); }
+        .pages-counter input {
+            width: 60px; text-align: center; border: none;
+            background: none; font-size: 16px; font-weight: 700; outline: none;
+        }
+
+        .upload-area {
+            border: 2px dashed var(--border); border-radius: 12px;
+            padding: 24px; text-align: center; cursor: pointer;
+            transition: all 0.2s; background: #f8fafc;
+        }
+        .upload-area:hover { border-color: var(--primary); background: var(--gradient-soft); }
+        .upload-area i { font-size: 28px; color: var(--primary); margin-bottom: 8px; }
+        .upload-area p { font-size: 13px; color: var(--text-light); }
+        .upload-area .filename { color: var(--success); font-weight: 600; margin-top: 6px; }
+
+        .option-row { display: flex; gap: 10px; flex-wrap: wrap; }
+        .option-chip {
+            padding: 10px 16px; background: #f8fafc; border: 1.5px solid var(--border);
+            border-radius: 11px; font-size: 13px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .option-chip:active { transform: scale(0.96); }
+        .option-chip.active {
+            background: var(--gradient-soft); border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .summary-row {
+            display: flex; justify-content: space-between;
+            padding: 8px 0; font-size: 14px;
+        }
+        .summary-row.total {
+            border-top: 1px dashed var(--border); margin-top: 8px; padding-top: 14px;
+            font-weight: 700; font-size: 16px;
+        }
+        .summary-row.total .summary-value { color: var(--primary); font-size: 18px; }
+
+        .cta-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            background: white; padding: 14px 16px max(14px, env(safe-area-inset-bottom));
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.08); z-index: 100;
+            display: flex; gap: 12px; align-items: center;
+            border-top: 1px solid var(--border);
+        }
+        .cta-info { flex: 1; }
+        .cta-info .total-label { font-size: 11px; color: var(--text-light); font-weight: 500; }
+        .cta-info .total-value { font-size: 20px; font-weight: 700; color: var(--text-dark); }
+        .cta-btn {
+            flex: 2; background: var(--gradient); color: white;
+            border: none; padding: 14px; border-radius: 14px;
+            font-family: inherit; font-size: 15px; font-weight: 700;
+            cursor: pointer; display: flex; align-items: center;
+            justify-content: center; gap: 8px;
+            box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35),
+                        inset 0 1px 0 rgba(255,255,255,0.25);
+            position: relative; overflow: hidden;
+            transition: transform 0.15s;
+        }
+        .cta-btn::after {
+            content: ''; position: absolute; top: 0; left: -120%;
+            width: 60%; height: 100%;
+            background: linear-gradient(120deg, transparent, rgba(255,255,255,0.35), transparent);
+            transform: skewX(-20deg); transition: left 0.8s; pointer-events: none;
+        }
+        .cta-btn:hover::after { left: 130%; }
+        .cta-btn:active { transform: scale(0.98); }
+
+        .saved-addr-row {
+            display: flex; gap: 8px; overflow-x: auto;
+            padding-bottom: 4px; margin-bottom: 12px;
+            scrollbar-width: none;
+        }
+        .saved-addr-row::-webkit-scrollbar { display: none; }
+        .saved-addr-pill {
+            flex-shrink: 0; padding: 10px 14px;
+            border: 1.5px solid var(--border); border-radius: 12px;
+            background: white; cursor: pointer; transition: all 0.2s;
+            display: flex; flex-direction: column; gap: 2px;
+            min-width: 140px; max-width: 200px;
+        }
+        .saved-addr-pill.active {
+            background: var(--gradient-soft); border-color: var(--primary);
+        }
+        .saved-addr-pill .sp-type {
+            font-size: 11px; font-weight: 700; color: var(--primary);
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .saved-addr-pill .sp-line {
+            font-size: 12px; color: var(--text-light);
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+
+        @media (min-width: 768px) {
+            .cta-bar { max-width: 480px; left: 50%; transform: translateX(-50%); }
+        }
+    </style>
+</head>
+<body>
+    <div class="page-loader" id="pageLoader">
+        <div class="loader-circle"></div>
+    </div>
+
+    <header class="product-header">
+        <button class="back-btn" onclick="history.back()"><i class="fas fa-arrow-left"></i></button>
+        <h2 id="headerTitle">Product Details</h2>
+        <button class="back-btn" id="shareBtn"><i class="fas fa-share-nodes"></i></button>
+    </header>
+
+    <div class="product-gallery">
+        <div class="gallery-track" id="galleryTrack"></div>
+        <div class="gallery-dots" id="galleryDots"></div>
+    </div>
+
+    <div class="product-info">
+        <h1 class="product-title" id="productTitle">-</h1>
+        <div class="product-meta-row">
+            <div class="rating-pill"><i class="fas fa-star" style="font-size:11px;"></i> <span id="productRating">-</span></div>
+            <div class="reviews-count" id="reviewsCount">-</div>
+        </div>
+        <p class="product-desc" id="productDesc">-</p>
+    </div>
+
+    <div class="price-card">
+        <div class="price-main">
+            <span class="price-current" id="priceCurrent">₹0</span>
+            <span class="price-unit">/ page</span>
+        </div>
+        <div class="price-note">✓ Best rates guaranteed</div>
+    </div>
+
+    <!-- Order Details -->
+    <div class="section-block">
+        <h4><i class="fas fa-file-lines"></i> Order Details</h4>
+
+        <div class="form-field">
+            <label>Number of Pages *</label>
+            <div class="pages-counter">
+                <button class="counter-btn" onclick="changePages(-1)">−</button>
+                <input type="number" id="pagesInput" value="5" min="1">
+                <button class="counter-btn" onclick="changePages(1)">+</button>
+            </div>
+            <div style="font-size:11px;color:var(--text-light);margin-top:6px;">Min pages: <span id="minPagesNote">5</span></div>
+        </div>
+
+        <div class="form-field">
+            <label>Writing Style</label>
+            <div class="option-row">
+                <div class="option-chip active" data-style="neat">✍️ Neat</div>
+                <div class="option-chip" data-style="cursive">🖋️ Cursive</div>
+                <div class="option-chip" data-style="print">📝 Print</div>
+            </div>
+        </div>
+
+        <div class="form-field">
+            <label>Paper Type</label>
+            <div class="option-row">
+                <div class="option-chip active" data-paper="ruled">📄 Ruled</div>
+                <div class="option-chip" data-paper="plain">⬜ Plain</div>
+                <div class="option-chip" data-paper="grid">🔲 Grid</div>
+            </div>
+        </div>
+
+        <div class="form-field">
+            <label>Special Instructions</label>
+            <textarea id="instructions" placeholder="Any special requirements? (margins, diagrams, ink color etc.)"></textarea>
+        </div>
+    </div>
+
+    <!-- Content Upload -->
+    <div class="section-block">
+        <h4><i class="fas fa-cloud-arrow-up"></i> Content to Write</h4>
+
+        <div class="form-field">
+            <label>Choose option *</label>
+            <div class="option-row">
+                <div class="option-chip active" data-content="upload">📎 Upload PDF/Doc</div>
+                <div class="option-chip" data-content="handover">🤝 Handover Book/Script</div>
+            </div>
+        </div>
+
+        <div id="uploadSection">
+            <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+                <i class="fas fa-file-arrow-up"></i>
+                <p><strong>Tap to upload</strong></p>
+                <p style="font-size:11px;">PDF, DOC, DOCX, Images up to 20MB</p>
+                <p class="filename" id="filename"></p>
+            </div>
+            <input type="file" id="fileInput" accept=".pdf,.doc,.docx,image/*" style="display:none;">
+        </div>
+
+        <div id="handoverSection" style="display:none;">
+            <div class="form-field" style="margin-top:12px;">
+                <label>Notes for Pickup</label>
+                <textarea id="handoverNotes" placeholder="Where & what to pick up (e.g. 'Pickup my chemistry book from front door')"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <!-- Pickup & Delivery -->
+    <div class="section-block">
+        <h4><i class="fas fa-truck-fast"></i> Pickup & Delivery Schedule</h4>
+
+        <div class="form-field">
+            <label>Pickup Date & Time *</label>
+            <input type="datetime-local" id="pickupTime">
+        </div>
+
+        <div class="form-field">
+            <label>Delivery Date & Time *</label>
+            <input type="datetime-local" id="deliveryTime">
+        </div>
+    </div>
+
+    <!-- Delivery Address (Zomato-style detailed) -->
+    <div class="section-block">
+        <h4><i class="fas fa-location-dot"></i> Delivery Address</h4>
+
+        <!-- Saved addresses pills -->
+        <div class="saved-addr-row" id="savedAddrPills"></div>
+
+        <div style="display:flex; gap:8px; margin-bottom:14px; flex-wrap:wrap;">
+            <button type="button" class="btn-ghost" id="pickOnMapBtn">
+                <i class="fas fa-map-location-dot"></i> Pick on Map
+            </button>
+            <button type="button" class="btn-ghost" id="useCurrentLoc">
+                <i class="fas fa-location-crosshairs"></i> Current Location
+            </button>
+        </div>
+
+        <div class="form-field">
+            <label>Receiver Name *</label>
+            <input type="text" id="receiverName" placeholder="Who'll receive the order?">
+        </div>
+
+        <div class="form-field">
+            <label>Contact Number *</label>
+            <input type="tel" id="phoneInput" placeholder="+91 XXXXX XXXXX" maxlength="15">
+        </div>
+
+        <div style="display:flex; gap:10px;">
+            <div class="form-field" style="flex:1;">
+                <label>Flat / Floor / Door No. *</label>
+                <input type="text" id="addrFlat" placeholder="e.g. 3B, Floor 2">
+            </div>
+            <div class="form-field" style="flex:1;">
+                <label>Building / Society *</label>
+                <input type="text" id="addrBuilding" placeholder="e.g. Sunshine Apt">
+            </div>
+        </div>
+
+        <div class="form-field">
+            <label>Area / Street *</label>
+            <input type="text" id="addrArea" placeholder="Locality, road, sector...">
+        </div>
+
+        <div class="form-field">
+            <label>Nearby Landmark</label>
+            <input type="text" id="addrLandmark" placeholder="Near park, opposite school...">
+        </div>
+
+        <div class="form-field">
+            <label>Full Address (auto-filled)</label>
+            <textarea id="addressInput" placeholder="Complete delivery address"></textarea>
+        </div>
+
+        <div class="form-field">
+            <label>Save this address as</label>
+            <div class="option-row" id="addrTypeRow">
+                <div class="option-chip active" data-atype="home">🏠 Home</div>
+                <div class="option-chip" data-atype="work">🏢 Work</div>
+                <div class="option-chip" data-atype="other">📍 Other</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Payment -->
+    <div class="section-block">
+        <h4><i class="fas fa-credit-card"></i> Payment Method</h4>
+        <div class="option-row">
+            <div class="option-chip active" data-pay="cod">💵 Cash on Delivery</div>
+            <div class="option-chip" data-pay="upi">📱 UPI</div>
+            <div class="option-chip" data-pay="card">💳 Card</div>
+        </div>
+    </div>
+
+    <!-- Order Summary -->
+    <div class="section-block">
+        <h4><i class="fas fa-receipt"></i> Order Summary</h4>
+        <div class="summary-row">
+            <span>Writing (<span id="sumPages">5</span> pages × ₹<span id="sumPrice">0</span>)</span>
+            <span class="summary-value">₹<span id="sumSubtotal">0</span></span>
+        </div>
+        <div class="summary-row">
+            <span>Delivery Charge</span>
+            <span class="summary-value">₹40</span>
+        </div>
+        <div class="summary-row">
+            <span>Platform Fee</span>
+            <span class="summary-value">₹10</span>
+        </div>
+        <div class="summary-row total">
+            <span>Total Amount</span>
+            <span class="summary-value">₹<span id="sumTotal">0</span></span>
+        </div>
+    </div>
+
+    <!-- CTA Bar -->
+    <div class="cta-bar">
+        <div class="cta-info">
+            <div class="total-label">Total</div>
+            <div class="total-value">₹<span id="ctaTotal">0</span></div>
+        </div>
+        <button class="cta-btn" id="placeOrderBtn">
+            <i class="fas fa-bag-shopping"></i> Place Order
+        </button>
+    </div>
+
+    <!-- MAP PICKER MODAL -->
+    <div class="modal-overlay" id="mapModal">
+        <div class="modal modal-full" style="display:flex; flex-direction:column;">
+            <div class="modal-handle"></div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+                <h3 style="margin:0;">📍 Pick Delivery Location</h3>
+                <button id="closeMapModal" style="background:#f1f5f9; border:none; width:36px; height:36px; border-radius:50%; font-size:16px; cursor:pointer;">×</button>
+            </div>
+            <button class="btn-primary" id="mapGPS" style="margin-bottom:12px;">
+                <i class="fas fa-location-crosshairs"></i> Use My Current Location
+            </button>
+            <div id="orderMapPicker" style="width:100%; height:340px; border-radius:14px; overflow:hidden; background:#f1f5f9; position:relative; margin-bottom:12px; z-index:1;">
+                <div class="map-pin-overlay"><i class="fas fa-location-dot"></i></div>
+            </div>
+            <div class="detected-address" id="orderDetectedAddr" style="display:none;">
+                <i class="fas fa-location-dot"></i>
+                <div style="flex:1; min-width:0;">
+                    <div class="addr-line" id="orderDetectedLine">—</div>
+                    <div class="addr-sub" id="orderDetectedSub">Move the pin precisely</div>
+                </div>
+            </div>
+            <button class="btn-primary" id="confirmMapAddr"><i class="fas fa-check"></i> Confirm This Location</button>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            requestAnimationFrame(() => {
+                document.getElementById('pageLoader').classList.add('hide');
+            });
+        });
+    </script>
+
+    <script defer src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script type="module" src="./firebase-config.js"></script>
+    <script type="module" src="./product.js"></script>
+</body>
+</html>

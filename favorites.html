@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#6366f1">
+    <title>Writely - Favorites</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin>
+    <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+    <link rel="stylesheet" href="app.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" onload="this.onload=null;this.rel='stylesheet'">
+    <noscript><link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"></noscript>
+</head>
+<body>
+    <div class="page-loader" id="pageLoader"><div class="loader-circle"></div></div>
+
+    <header class="app-header" style="padding-bottom: 14px;">
+        <div class="header-top" style="margin-bottom: 0;">
+            <h2 style="font-size: 20px; font-weight: 700; flex: 1;">My Favorites ❤️</h2>
+        </div>
+    </header>
+
+    <div class="writings-grid" id="favGrid"></div>
+
+    <nav class="bottom-nav">
+        <a href="home.html" class="nav-item"><i class="fas fa-house"></i><span>Home</span></a>
+        <a href="orders.html" class="nav-item"><i class="fas fa-bag-shopping"></i><span>Orders</span></a>
+        <a href="favorites.html" class="nav-item active"><i class="fas fa-heart"></i><span>Favorites</span></a>
+        <a href="settings.html" class="nav-item"><i class="fas fa-gear"></i><span>Settings</span></a>
+    </nav>
+
+    <div class="toast" id="toast"></div>
+
+    <script type="module">
+        import { auth, db } from './firebase-config.js';
+        import { onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { ref, get, set } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        let currentUser = null;
+
+        onAuthStateChanged(auth, async (user) => {
+            if (!user) { window.location.href = 'login.html'; return; }
+            currentUser = user;
+            await loadFavs();
+            document.getElementById('pageLoader').classList.add('hide');
+        });
+
+        async function loadFavs() {
+            const favSnap = await get(ref(db, `users/${currentUser.uid}/favorites`));
+            const grid = document.getElementById('favGrid');
+            
+            if (!favSnap.exists()) {
+                grid.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-heart"></i>
+                        <h3>No favorites yet</h3>
+                        <p>Tap the heart icon to save writings you love</p>
+                        <button class="btn-primary" onclick="window.location.href='home.html'">Browse Writings</button>
+                    </div>
+                `;
+                return;
+            }
+            
+            const favIds = Object.keys(favSnap.val());
+            const writings = await Promise.all(favIds.map(async id => {
+                const s = await get(ref(db, `writings/${id}`));
+                return s.val();
+            }));
+            const valid = writings.filter(Boolean);
+            
+            if (valid.length === 0) {
+                grid.innerHTML = `<div class="empty-state"><i class="fas fa-heart"></i><h3>No favorites yet</h3></div>`;
+                return;
+            }
+            
+            grid.innerHTML = valid.map(w => `
+                <div class="writing-card" onclick="window.location.href='product.html?id=${w.id}'">
+                    <div class="card-image">
+                        <img src="${w.image}" alt="${w.title}" loading="lazy">
+                        <div class="card-badge">⚡ ${w.deliveryTime}</div>
+                        <div class="card-fav active" onclick="event.stopPropagation(); removeFav('${w.id}', this)">
+                            <i class="fas fa-heart"></i>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="card-title-row">
+                            <div class="card-title">${w.title}</div>
+                            <div class="rating-badge"><i class="fas fa-star" style="font-size:10px;"></i>${w.rating}</div>
+                        </div>
+                        <div class="card-desc">${w.description}</div>
+                        <div class="card-meta">
+                            <div class="meta-info">
+                                <span><i class="fas fa-user-pen"></i> ${w.writer}</span>
+                                <span><i class="fas fa-file-lines"></i> ${w.minPages}+ pages</span>
+                            </div>
+                            <div class="card-price">₹${w.pricePerPage}<small>/page</small></div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        window.removeFav = async function(id, el) {
+            await set(ref(db, `users/${currentUser.uid}/favorites/${id}`), null);
+            el.closest('.writing-card').style.transition = 'all 0.3s ease';
+            el.closest('.writing-card').style.opacity = '0';
+            el.closest('.writing-card').style.transform = 'scale(0.9)';
+            setTimeout(loadFavs, 300);
+            showToast('Removed from favorites');
+        };
+
+        function showToast(msg) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            t.className = 'toast show';
+            setTimeout(() => t.classList.remove('show'), 2000);
+        }
+    </script>
+</body>
+</html>
